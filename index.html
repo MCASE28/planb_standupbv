@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>똑바로서라 빕어 (Stand Up Straight Beaver)</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
@@ -25,7 +27,14 @@
         <!-- Load images to use in canvas -->
         <img id="img-cart" src="cart.png" alt="cart" style="display:none;">
         <img id="img-face" src="face.png" alt="face" style="display:none;">
+
+        <!-- Audio -->
+        <audio id="bgm-gameover" src="gameover.mp3"></audio>
+
+        <!-- Background Video -->
+        <video id="bg-video" src="bg.mp4" autoplay loop muted playsinline style="display:none;"></video>
     </div>
     <script src="script.js"></script>
 </body>
+
 </html>

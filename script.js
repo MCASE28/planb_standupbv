@@ -10,6 +10,8 @@ const uiStartScreen = document.getElementById('start-screen');
 const uiFinalScore = document.getElementById('final-score');
 const btnRestart = document.getElementById('restart-btn');
 const btnStart = document.getElementById('start-btn');
+const audioGameOver = document.getElementById('bgm-gameover');
+const bgVideo = document.getElementById('bg-video');
 
 // Game State
 let isPlaying = false;
@@ -20,19 +22,25 @@ let speed = 0;
 const BASE_SPEED = 200; // pixels per second
 const MAX_SPEED = 800;
 
+// Visual Configuration
+const VIDEO_WIDTH = 300; // Updated size
+const VIDEO_HEIGHT = 500; // Updated size
+const VIDEO_GAP = 400; // Gap between videos (billboard style)
+
 // Physics State
 let angle = 0; // radians
 let angularVelocity = 0; // radians per second
 const GRAVITY = 25.0; // Much stronger gravity (was 4.0)
 const BALANCE_FORCE = 80.0; // Much stronger input (was 8.0)
 const DAMPING = 0.92; // Less damping for more swing
-const MAX_ANGLE = Math.PI / 2.5; // ~72 degrees, failure threshold
+const MAX_ANGLE = Math.PI / 1.5; // Increased to ~120 degrees as requested
 
 // Input State
 const keys = {
     ArrowLeft: false,
     ArrowRight: false
 };
+let lastInputDirection = null; // 'left', 'right', or null
 
 // Canvas Sizing
 function resize() {
@@ -80,8 +88,32 @@ function update(timestamp) {
 
     // Input torque (to correct balance)
     let inputTorque = 0;
-    if (keys.ArrowLeft) inputTorque -= BALANCE_FORCE; // Tilt left
-    if (keys.ArrowRight) inputTorque += BALANCE_FORCE; // Tilt right
+    let currentDirection = null;
+
+    if (keys.ArrowLeft) {
+        inputTorque -= BALANCE_FORCE;
+        currentDirection = 'left';
+    }
+    if (keys.ArrowRight) {
+        inputTorque += BALANCE_FORCE;
+        currentDirection = 'right';
+    }
+
+    // Direction Switch Penalty (Anti-Tapping)
+    if (currentDirection && lastInputDirection && currentDirection !== lastInputDirection) {
+        // User switched direction active (e.g. Left -> Right)
+        // Apply massive random impulse
+        const penaltyMultiplier = 2.0 + Math.random() * 3.0; // 2x to 5x penalty force
+        const penaltyImpulse = (currentDirection === 'right' ? 1 : -1) * BALANCE_FORCE * penaltyMultiplier * 0.1; // 0.1s worth of strong force
+
+        console.log(`Penalty Applied! ${penaltyImpulse}`);
+        angularVelocity += penaltyImpulse;
+    }
+
+    // Update last direction only if we are pressing something
+    if (currentDirection) {
+        lastInputDirection = currentDirection;
+    }
 
     // Note: If you press Right, you want to push the "head" right? 
     // Usually in these games:
@@ -116,13 +148,42 @@ function draw() {
     // --- Background (Scrolling Floor) ---
     const floorY = canvas.height * 0.8;
 
-    // Draw Sky/Background
-    // We can draw some passing clouds or just simple gradient
+    // Draw Sky/Background (Video Billboards)
+    // Always draw gradient first as fallback/background
     const gradient = ctx.createLinearGradient(0, 0, 0, floorY);
     gradient.addColorStop(0, '#87CEEB');
     gradient.addColorStop(1, '#E0F7FA');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, floorY);
+
+    if (bgVideo.readyState >= 2) {
+        const vW = VIDEO_WIDTH;
+        const vH = VIDEO_HEIGHT;
+        const spacing = vW + VIDEO_GAP;
+
+        // Calculate offset based on distance to make them scroll
+        const scrollOffset = -(distance % spacing);
+
+        // Draw billboards across the screen
+        const drawY = floorY - vH; // Bottom of video at floor line
+
+        // Loop from slightly off-screen left to off-screen right
+        for (let x = scrollOffset - spacing; x < canvas.width + spacing; x += spacing) {
+            // Check visibility
+            if (x + vW > 0 && x < canvas.width) {
+                // Draw Pole
+                ctx.fillStyle = '#5D4037';
+                ctx.fillRect(x + vW / 2 - 10, drawY + vH, 20, canvas.height - (drawY + vH)); // Pole to ground
+
+                // Draw Video Frame
+                ctx.fillStyle = '#3E2723';
+                ctx.fillRect(x - 10, drawY - 10, vW + 20, vH + 20); // Dark border frame
+
+                // Draw Video
+                ctx.drawImage(bgVideo, x, drawY, vW, vH);
+            }
+        }
+    }
 
     // Draw Floor
     ctx.fillStyle = '#8D6E63'; // Brownish ground
@@ -189,6 +250,14 @@ function startGame() {
     // Random angle between -0.1 and 0.1 radians -> Increased to +/- 0.5
     angle = (Math.random() - 0.5) * 0.5;
     angularVelocity = 0;
+    lastInputDirection = null;
+
+    // Audio Reset
+    audioGameOver.pause();
+    audioGameOver.currentTime = 0;
+
+    // Video Play
+    bgVideo.play().catch(e => console.log('Video play failed', e));
 
     startTime = performance.now();
     lastTime = startTime;
@@ -204,6 +273,11 @@ function gameOver() {
     isPlaying = false;
     uiFinalScore.innerText = Math.floor(distance / 100);
     uiGameOver.classList.remove('hidden');
+
+    // Play audio from 0.5s
+    audioGameOver.currentTime = 0.5;
+    audioGameOver.play().catch(e => console.log('Audio play failed:', e));
+
     draw(); // Draw one last frame with the fallen angle
 }
 
