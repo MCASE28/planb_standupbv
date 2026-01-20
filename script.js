@@ -12,6 +12,9 @@ const btnRestart = document.getElementById('restart-btn');
 const btnStart = document.getElementById('start-btn');
 const audioGameOver = document.getElementById('bgm-gameover');
 const audioBgm = document.getElementById('bgm-music');
+audioBgm.volume = 0.5;
+audioGameOver.volume = 0.7;
+
 const bgVideo = document.getElementById('bg-video');
 
 // Game State
