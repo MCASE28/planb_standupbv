@@ -1,0 +1,89 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #87CEEB; /* Sky blue background */
+    font-family: 'Arial', sans-serif;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Let clicks pass through to canvas if needed, though we use keys */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#score {
+    margin-top: 20px;
+    font-size: 48px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#game-over, #start-screen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    pointer-events: auto; /* Enable clicks on buttons */
+}
+
+.hidden {
+    display: none !important;
+}
+
+h1 {
+    margin: 0 0 20px 0;
+    color: #333;
+}
+
+p {
+    font-size: 24px;
+    margin: 0 0 30px 0;
+    color: #666;
+}
+
+button {
+    padding: 15px 40px;
+    font-size: 24px;
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+button:hover {
+    background-color: #ee5253;
+    transform: scale(1.05);
+}
+
+button:active {
+    transform: scale(0.95);
+}

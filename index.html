@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>똑바로서라 빕어 (Stand Up Straight Beaver)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-layer">
+            <div id="score">0 m</div>
+            <div id="game-over" class="hidden">
+                <h1>Game Over</h1>
+                <p>기록: <span id="final-score">0</span> m</p>
+                <button id="restart-btn">다시 하기</button>
+            </div>
+            <div id="start-screen">
+                <h1>똑바로서라 빕어</h1>
+                <p>좌/우 방향키로 균형을 잡으세요!</p>
+                <button id="start-btn">게임 시작</button>
+            </div>
+        </div>
+        <!-- Load images to use in canvas -->
+        <img id="img-cart" src="cart.png" alt="cart" style="display:none;">
+        <img id="img-face" src="face.png" alt="face" style="display:none;">
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
