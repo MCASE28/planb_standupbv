@@ -26,22 +26,22 @@ const MAX_SPEED = 800;
 const VIDEO_WIDTH = 300;
 const VIDEO_HEIGHT = 500;
 const VIDEO_GAP = 400;
-const NECK_LENGTH = 150; // Length of the stick
 
-// Physics State (Inverted Pendulum Cart-Pole)
-let angle = 0; // 0 is upright
-let angularVelocity = 0;
+// Ball on Plate Physics
+const PLATE_WIDTH = 250;
+let ballOffset = 0;
+let ballVelocity = 0;
+let ballAngle = 0;
+let ballDropY = 0;       // Vertical drop distance
+let ballDropVelocity = 0; // Vertical drop speed
 
-// Tuning Constants
-const GRAVITY = 15.0;     // Force pulling head down (Tipping)
-const CART_POWER = 55.0;  // Strong recovery force
-const DAMPING = 0.92;     // Air resistance
-const MAX_ANGLE = Math.PI / 2; // 90 degrees = fallen
+const DAMPING = 0.99;    // Slight friction for the ball
+// const GRAVITY_SLOPE = 0; // Flat plate, so no gravity slope bias initially
 
 // Cart State
 let cartX = 0;
 let cartVelocity = 0;
-const CART_SPEED_FACTOR = 1200;
+const CART_ACCEL = 2500; // How fast the cart accelerates
 const CART_FRICTION = 0.85;
 
 // Input State
@@ -78,7 +78,7 @@ window.addEventListener('keyup', (e) => {
 function update(timestamp) {
     if (!isPlaying) return;
 
-    const dt = (timestamp - lastTime) / 1000;
+    const dt = (timestamp - lastTime) / 1000; // delta time in seconds
     lastTime = timestamp;
 
     // 1. Update Game Speed (Scrolling)
@@ -87,17 +87,16 @@ function update(timestamp) {
     distance += speed * dt;
     uiScore.innerText = `${Math.floor(distance / 100)} m`;
 
-    // 2. Cart Physics (Visual Position)
-    let dirInput = 0;
-    if (keys.ArrowLeft) dirInput = -1;
-    if (keys.ArrowRight) dirInput = 1;
+    // 2. Cart Physics (The Plate)
+    let cartAccelInput = 0;
+    if (keys.ArrowLeft) cartAccelInput -= CART_ACCEL;
+    if (keys.ArrowRight) cartAccelInput += CART_ACCEL;
 
-    // Move Cart
-    cartVelocity += dirInput * CART_SPEED_FACTOR * dt;
+    cartVelocity += cartAccelInput * dt;
     cartVelocity *= Math.pow(CART_FRICTION, dt * 60);
     cartX += cartVelocity * dt;
 
-    // Clamp Cart
+    // Clamp Cart to Screen
     const edgeMargin = 50;
     if (cartX < edgeMargin) {
         cartX = edgeMargin;
@@ -107,32 +106,47 @@ function update(timestamp) {
         cartVelocity = 0;
     }
 
-    // 3. Pendulum Physics (Torque Balance)
-    // Difficulty Progression: Every 10m (1000px), increase difficulty
-    const level = Math.floor(distance / 1000); // 0, 1, 2...
+    // 3. Ball Physics (The Face)
+    // Only apply horizontal physics if NOT falling
+    if (ballDropY <= 0) {
+        // Accel: When cart speeds Right (+), Ball feels force Left (-)
+        const inertiaForce = -cartAccelInput * 0.002;
 
-    // Dynamic Physics Parameters
-    // Gravity increases by 2.0 per level (Harder to keep upright)
-    const effectiveGravity = GRAVITY + (level * 2.0);
-    // Noise increases by 3.0 per level (More chaotic wind)
-    const noiseRange = 8.0 + (level * 3.0);
+        // Instability (Wind/Noise) + Convex Slope (Ball falls away from center)
+        // ballOffset * 5.0 -> Stronger force pulling away from center as it moves out
+        const slopeAccel = ballOffset * 5.0;
+        const noise = (Math.random() - 0.5) * 10.0; // Stronger noise
 
-    const gravityTorque = Math.sin(angle) * effectiveGravity;
-    const inertiaTorque = -dirInput * CART_POWER;
+        // Update Ball Velocity
+        ballVelocity += (inertiaForce + slopeAccel + noise) * dt;
+        ballVelocity *= Math.pow(DAMPING, dt * 60); // Friction rolling on plate
 
-    // Wind/Instability
-    const noise = (Math.random() - 0.5) * noiseRange;
+        // Update Ball Position (Offset from center)
+        ballOffset += ballVelocity * dt;
 
-    // Total Angular Acceleration
-    const angularAccel = gravityTorque + inertiaTorque + noise;
+        // Update Ball Rotation (Visual only)
+        // angle change = distance moved / radius
+        // Assuming ball radius approx 40px (scaled down face)
+        const ballRadius = 40;
+        ballAngle += (ballVelocity * dt) / ballRadius;
+    }
 
-    // Update Angle
-    angularVelocity += angularAccel * dt;
-    angularVelocity *= Math.pow(DAMPING, dt * 60);
-    angle += angularVelocity * dt;
+    // 4. Falling & Game Over Logic
+    const isOffPlate = Math.abs(ballOffset) > PLATE_WIDTH / 2;
 
-    // 4. Check Game Over
-    if (Math.abs(angle) > MAX_ANGLE) {
+    if (isOffPlate) {
+        // Apply Gravity for Falling
+        ballDropVelocity += 1000 * dt; // Strong gravity
+        ballDropY += ballDropVelocity * dt;
+
+        // Horizontal momentum continues
+        ballOffset += ballVelocity * dt;
+        ballAngle += (ballVelocity * dt) / 40;
+    }
+
+    // Game Over if it falls deep enough (e.g. past the floor)
+    // Floor is roughly at canvas.height * 0.8. Let's say +200px drop.
+    if (ballDropY > 200) {
         gameOver();
         return;
     }
@@ -146,7 +160,7 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // --- Background (Scrolling Floor) ---
-    const floorY = canvas.height * 0.9; // 0.8 -> 0.9 (Thinner floor)
+    const floorY = canvas.height * 0.8;
 
     // Draw Sky
     const gradient = ctx.createLinearGradient(0, 0, 0, floorY);
@@ -165,10 +179,13 @@ function draw() {
 
         for (let x = scrollOffset - spacing; x < canvas.width + spacing; x += spacing) {
             if (x + vW > 0 && x < canvas.width) {
+                // Pole
                 ctx.fillStyle = '#5D4037';
                 ctx.fillRect(x + vW / 2 - 10, drawY + vH, 20, canvas.height - (drawY + vH));
+                // Frame
                 ctx.fillStyle = '#3E2723';
                 ctx.fillRect(x - 10, drawY - 10, vW + 20, vH + 20);
+                // Video
                 ctx.drawImage(bgVideo, x, drawY, vW, vH);
             }
         }
@@ -193,54 +210,35 @@ function draw() {
 
     // --- Draw Entities ---
     const scale = 0.8;
-    const faceScale = 0.5;
+    const faceScale = 0.35; // Reduced from 0.5 to match cart size better
 
     if (cartImg.complete && faceImg.complete) {
+        // Draw Cart (Plate)
         const cW = cartImg.width * scale;
         const cH = cartImg.height * scale;
         const cX = cartX - cW / 2;
         const cY = floorY - cH + 10;
 
-        // Pivot Point (Center of Cart Top)
-        const pivotX = cartX;
-        const pivotY = cY + 40; // Moved down deeper into the cart
+        // Draw Cart First
+        ctx.drawImage(cartImg, cX, cY, cW, cH);
 
-        // Draw Logic: 
-        // 1. Prepare to Draw Neck & Face
-        ctx.save();
-        ctx.translate(pivotX, pivotY); // Move to pivot
-        ctx.rotate(angle); // Rotate pendulum
-
-        // 2. Draw Neck (Black Stick)
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(0, -NECK_LENGTH);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 12;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-
-        // 3. Draw Plate (White Dish under Face)
-        ctx.beginPath();
-        // Draw an ellipse at the top of the neck
-        // Ellipse center: (0, -NECK_LENGTH)
-        ctx.ellipse(0, -NECK_LENGTH, 40, 10, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#FFF';
-        ctx.fill();
-        ctx.strokeStyle = '#CCC';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // 4. Draw Face (On top of Plate)
+        // Draw Face (Ball) on top of Cart
         const fW = faceImg.width * faceScale;
         const fH = faceImg.height * faceScale;
-        // Face sits on the plate (at -NECK_LENGTH)
-        ctx.drawImage(faceImg, -fW / 2, -NECK_LENGTH - fH + 10, fW, fH);
 
+        // Ball Position: Cart Center + Offset
+        // Y position: Sitting on top of cart (approx cY)
+        // Let's assume the cart top is flat around 20px from top
+        const ballX = cartX + ballOffset;
+        const ballY = (cY - fH / 2 + 30) + ballDropY; // Add Falling Offset
+
+        ctx.save();
+        ctx.translate(ballX, ballY);
+        ctx.rotate(ballAngle);
+
+        // Draw centered on pivot
+        ctx.drawImage(faceImg, -fW / 2, -fH / 2, fW, fH);
         ctx.restore();
-
-        // 5. Draw Cart Last (Front) - Covers the base of the neck
-        ctx.drawImage(cartImg, cX, cY, cW, cH);
     }
 }
 
@@ -250,15 +248,24 @@ function startGame() {
     distance = 0;
     speed = BASE_SPEED;
 
+    // Reset Physics
     cartX = canvas.width * 0.5;
     cartVelocity = 0;
 
-    angle = (Math.random() - 0.5) * 0.2;
-    angularVelocity = 0;
+    ballOffset = 0;
+    // Initial Kick: Ball starts rolling randomly!
+    ballVelocity = (Math.random() - 0.5) * 100; // Strong start push
+    ballAngle = 0;
 
+    // Reset Fall State
+    ballDropY = 0;
+    ballDropVelocity = 0;
+
+    // Audio Reset
     audioGameOver.pause();
     audioGameOver.currentTime = 0;
 
+    // Video Play
     bgVideo.play().catch(e => console.log('Video play failed', e));
 
     startTime = performance.now();
@@ -276,6 +283,7 @@ function gameOver() {
     uiFinalScore.innerText = Math.floor(distance / 100);
     uiGameOver.classList.remove('hidden');
 
+    // Play audio from 0.5s
     audioGameOver.currentTime = 0.5;
     audioGameOver.play().catch(e => console.log('Audio play failed:', e));
 
