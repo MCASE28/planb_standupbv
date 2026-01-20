@@ -17,6 +17,19 @@ audioGameOver.volume = 0.7;
 
 const bgVideo = document.getElementById('bg-video');
 
+// Try BGM play immediately
+audioBgm.play().catch(() => {
+    console.log('Autoplay blocked. Waiting for interaction.');
+    const playOnInteraction = () => {
+        audioBgm.play();
+        bgVideo.play().catch(e => console.log('Video autoplay failed', e)); // Also try video
+        document.removeEventListener('click', playOnInteraction);
+        document.removeEventListener('keydown', playOnInteraction);
+    };
+    document.addEventListener('click', playOnInteraction);
+    document.addEventListener('keydown', playOnInteraction);
+});
+
 // Game State
 let isPlaying = false;
 let startTime = 0;
@@ -265,10 +278,7 @@ function startGame() {
 
     bgVideo.play().catch(e => console.log('Video play failed', e));
 
-    // Play BGM if not already playing
-    if (audioBgm.paused) {
-        audioBgm.play().catch(e => console.log('BGM play failed', e));
-    }
+
 
     startTime = performance.now();
     lastTime = startTime;
