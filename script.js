@@ -17,17 +17,28 @@ audioGameOver.volume = 0.7;
 
 const bgVideo = document.getElementById('bg-video');
 
-// Try BGM play immediately
-audioBgm.play().catch(() => {
-    console.log('Autoplay blocked. Waiting for interaction.');
-    const playOnInteraction = () => {
-        audioBgm.play();
-        bgVideo.play().catch(e => console.log('Video autoplay failed', e)); // Also try video
-        document.removeEventListener('click', playOnInteraction);
-        document.removeEventListener('keydown', playOnInteraction);
-    };
-    document.addEventListener('click', playOnInteraction);
-    document.addEventListener('keydown', playOnInteraction);
+// Volume Controls
+// Volume Controls - Sync logic
+const bgmSliders = document.querySelectorAll('.bgm-slider');
+const sfxSliders = document.querySelectorAll('.sfx-slider');
+
+function updateVolume(type, value) {
+    const normalizedValue = value / 100;
+    if (type === 'bgm') {
+        audioBgm.volume = normalizedValue;
+        bgmSliders.forEach(slider => slider.value = value);
+    } else {
+        audioGameOver.volume = normalizedValue;
+        sfxSliders.forEach(slider => slider.value = value);
+    }
+}
+
+bgmSliders.forEach(slider => {
+    slider.addEventListener('input', (e) => updateVolume('bgm', e.target.value));
+});
+
+sfxSliders.forEach(slider => {
+    slider.addEventListener('input', (e) => updateVolume('sfx', e.target.value));
 });
 
 // Game State
@@ -278,7 +289,10 @@ function startGame() {
 
     bgVideo.play().catch(e => console.log('Video play failed', e));
 
-
+    // Play BGM if not already playing
+    if (audioBgm.paused) {
+        audioBgm.play().catch(e => console.log('BGM play failed', e));
+    }
 
     startTime = performance.now();
     lastTime = startTime;

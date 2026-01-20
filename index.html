@@ -17,11 +17,31 @@
                 <h1>Game Over</h1>
                 <p>기록: <span id="final-score">0</span> m</p>
                 <button id="restart-btn">다시 하기</button>
+                <div class="volume-controls">
+                    <div class="control-group">
+                        <label for="bgm-volume-end">BGM</label>
+                        <input type="range" id="bgm-volume-end" class="bgm-slider" min="0" max="100" value="50">
+                    </div>
+                    <div class="control-group">
+                        <label for="sfx-volume-end">효과음</label>
+                        <input type="range" id="sfx-volume-end" class="sfx-slider" min="0" max="100" value="70">
+                    </div>
+                </div>
             </div>
             <div id="start-screen">
                 <h1>똑바로서라 빕어</h1>
                 <p>좌/우 방향키로 균형을 잡으세요!</p>
                 <button id="start-btn">게임 시작</button>
+                <div class="volume-controls">
+                    <div class="control-group">
+                        <label for="bgm-volume-start">BGM</label>
+                        <input type="range" id="bgm-volume-start" class="bgm-slider" min="0" max="100" value="50">
+                    </div>
+                    <div class="control-group">
+                        <label for="sfx-volume-start">효과음</label>
+                        <input type="range" id="sfx-volume-start" class="sfx-slider" min="0" max="100" value="70">
+                    </div>
+                </div>
             </div>
             <img id="logo" src="logo.png" alt="Logo">
         </div>

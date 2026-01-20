@@ -102,3 +102,34 @@ button:hover {
 button:active {
     transform: scale(0.95);
 }
+
+/* Volume Controls */
+.volume-controls {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.control-group label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #444;
+    width: 60px;
+    text-align: right;
+}
+
+.control-group input[type="range"] {
+    flex: 1;
+    cursor: pointer;
+    accent-color: #ff6b6b;
+}
