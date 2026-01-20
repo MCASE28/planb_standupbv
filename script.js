@@ -11,6 +11,7 @@ const uiFinalScore = document.getElementById('final-score');
 const btnRestart = document.getElementById('restart-btn');
 const btnStart = document.getElementById('start-btn');
 const audioGameOver = document.getElementById('bgm-gameover');
+const audioBgm = document.getElementById('bgm-music');
 const bgVideo = document.getElementById('bg-video');
 
 // Game State
@@ -260,6 +261,11 @@ function startGame() {
     audioGameOver.currentTime = 0;
 
     bgVideo.play().catch(e => console.log('Video play failed', e));
+
+    // Play BGM if not already playing
+    if (audioBgm.paused) {
+        audioBgm.play().catch(e => console.log('BGM play failed', e));
+    }
 
     startTime = performance.now();
     lastTime = startTime;
